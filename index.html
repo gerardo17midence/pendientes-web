@@ -2,133 +2,523 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Gerardo — Pendientes</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Pendientes — Gerardo</title>
 <style>
-  :root { --bg: #0f1218; --card: #181c24; --border: #282e3d; --accent: #3b82f6; --text: #f3f4f6; --text-dim: #9ca3af; }
-  * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, sans-serif; }
-  body { background: var(--bg); color: var(--text); padding: 16px; padding-bottom: 90px; }
-  header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-  h1 { font-size: 18px; font-weight: 800; }
-  .badge-date { font-size: 12px; color: var(--text-dim); }
-  
-  /* Secciones estilo PDF */
-  .group-title { font-size: 14px; font-weight: 800; color: var(--accent); margin: 20px 0 8px; border-bottom: 1px solid var(--border); padding-bottom: 4px; text-transform: uppercase; }
-  .card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 12px; }
-  .task-item { display: flex; align-items: flex-start; justify-content: space-between; padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 13px; }
-  .task-item:last-child { border-bottom: none; }
-  .task-id { color: var(--text-dim); font-weight: bold; width: 24px; }
-  .task-desc { flex: 1; margin-right: 10px; line-height: 1.4; }
-  .task-days { font-size: 11px; color: var(--text-dim); white-space: nowrap; }
+  :root {
+    --ink: #14181F;
+    --ink-soft: #52586A;
+    --paper: #F5F4F0;
+    --card: #FFFFFF;
+    --line: #E3E1D9;
+    --accent: #0B6E63;
+    --accent-soft: #E4F1EE;
+    --high: #B42318;
+    --high-bg: #FBE1E1;
+    --mid: #8A5A00;
+    --mid-bg: #FFF3D6;
+    --low: #1C7A34;
+    --low-bg: #E8F4EA;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  body { padding-bottom: 96px; }
 
-  /* Barra inferior */
-  .action-bar { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(15,18,24,0.95); backdrop-filter: blur(10px); border-top: 1px solid var(--border); padding: 12px 16px; display: flex; gap: 10px; z-index: 100; }
-  .btn { flex: 1; border: none; border-radius: 10px; padding: 12px; font-weight: 700; font-size: 14px; cursor: pointer; text-align: center; }
-  .btn-main { background: var(--accent); color: white; }
-  .btn-sec { background: var(--card); border: 1px solid var(--border); color: var(--text); }
-  
-  .loading-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 200; align-items: center; justify-content: center; flex-direction: column; text-align: center; padding: 20px;}
-  .loading-overlay.active { display: flex; }
-  .spinner { border: 4px solid var(--border); border-top: 4px solid var(--accent); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 15px;}
-  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--paper);
+    padding: 18px 18px 12px 18px;
+    border-bottom: 1px solid var(--line);
+  }
+  header h1 {
+    margin: 0;
+    font-size: 21px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+  }
+  header .meta {
+    margin-top: 3px;
+    font-size: 12.5px;
+    color: var(--ink-soft);
+  }
+
+  main { padding: 14px 14px 0 14px; max-width: 640px; margin: 0 auto; }
+
+  .section-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--ink-soft);
+    margin: 20px 4px 8px 4px;
+  }
+
+  .person-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+  .person-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 11px 14px;
+    background: var(--ink);
+    color: #fff;
+    font-weight: 700;
+    font-size: 14px;
+  }
+  .person-header .count {
+    font-weight: 500;
+    font-size: 12px;
+    opacity: 0.75;
+  }
+  .task-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+    border-top: 1px solid var(--line);
+  }
+  .task-row:first-of-type { border-top: none; }
+
+  .check {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 1.8px solid #C9C6BB;
+    flex-shrink: 0;
+    margin-top: 1px;
+    background: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.12s ease;
+  }
+  .check:active { transform: scale(0.88); }
+  .check.done { background: var(--accent); border-color: var(--accent); }
+  .check.done::after {
+    content: "✓";
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .task-body { flex: 1; min-width: 0; }
+  .task-desc {
+    font-size: 14.5px;
+    line-height: 1.35;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+  .task-desc .star { color: #B8860B; font-size: 13px; }
+  .age {
+    font-size: 9.5px;
+    border-radius: 8px;
+    padding: 1px 6px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .age-high { background: var(--high-bg); color: var(--high); }
+  .age-mid  { background: var(--mid-bg); color: var(--mid); }
+  .age-low  { background: var(--low-bg); color: var(--low); }
+
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--ink-soft);
+    font-size: 14px;
+  }
+
+  .habit-card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    margin-bottom: 10px;
+  }
+  .habit-name { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+  .habit-days { display: flex; gap: 5px; }
+  .habit-day {
+    flex: 1;
+    text-align: center;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 6px 0;
+    border-radius: 6px;
+    background: var(--paper);
+    color: var(--ink-soft);
+    border: 1px solid var(--line);
+  }
+  .habit-day.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  .add-row {
+    display: flex;
+    gap: 8px;
+    padding: 11px 14px;
+    border-top: 1px solid var(--line);
+  }
+  .add-row input {
+    flex: 1;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 13.5px;
+    font-family: inherit;
+    background: var(--paper);
+  }
+  .add-row button {
+    border: none;
+    background: var(--accent);
+    color: #fff;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .add-row button:disabled { opacity: 0.4; }
+
+  .fab-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--card);
+    border-top: 1px solid var(--line);
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    display: flex;
+    gap: 10px;
+    z-index: 20;
+  }
+  .fab-bar button, .fab-bar label {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border: none;
+    border-radius: 10px;
+    padding: 13px 0;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .btn-camera { background: var(--accent); color: #fff; }
+  .btn-pdf { background: var(--paper); color: var(--ink); border: 1px solid var(--line) !important; }
+  input[type="file"] { display: none; }
+
+  .toast {
+    position: fixed;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-140%);
+    background: var(--ink);
+    color: #fff;
+    padding: 11px 18px;
+    border-radius: 10px;
+    font-size: 13.5px;
+    max-width: 90%;
+    text-align: center;
+    z-index: 100;
+    transition: transform 0.25s ease;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.error { background: var(--high); }
+
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(20,24,31,0.55);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 90;
+  }
+  .overlay.show { display: flex; }
+  .overlay-box {
+    background: var(--card);
+    border-radius: 14px;
+    padding: 28px 30px;
+    text-align: center;
+    max-width: 260px;
+  }
+  .spinner {
+    width: 30px;
+    height: 30px;
+    border: 3px solid var(--line);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    margin: 0 auto 14px auto;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .overlay-box p { margin: 0; font-size: 13.5px; color: var(--ink-soft); }
+
+  .skeleton {
+    background: linear-gradient(90deg, var(--card) 25%, #EFEDE6 37%, var(--card) 63%);
+    background-size: 400% 100%;
+    animation: shimmer 1.4s ease infinite;
+    border-radius: var(--radius);
+    height: 62px;
+    margin-bottom: 12px;
+  }
+  @keyframes shimmer { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
 </style>
 </head>
 <body>
 
-<header>
-  <div>
-    <h1>Gerardo — Pendientes</h1>
-    <div class="badge-date">Vista Previa Organizada</div>
+  <header>
+    <h1>Pendientes</h1>
+    <div class="meta" id="fecha-meta">Cargando…</div>
+  </header>
+
+  <main>
+    <div class="section-label">Equipo</div>
+    <div id="tareas-container">
+      <div class="skeleton"></div>
+      <div class="skeleton"></div>
+      <div class="skeleton"></div>
+    </div>
+
+    <div class="section-label">Hábitos — esta semana</div>
+    <div id="habitos-container"></div>
+  </main>
+
+  <div class="fab-bar">
+    <label class="btn-camera" for="foto-input">
+      📷 Tomar foto
+    </label>
+    <input type="file" id="foto-input" accept="image/*" capture="environment">
+    <button class="btn-pdf" id="btn-pdf">📄 Descargar PDF</button>
   </div>
-  <button class="btn btn-sec" style="flex: unset; padding: 8px 12px;" onclick="descargarPDF()">📄 Exportar PDF</button>
-</header>
 
-<div id="boardContainer">
-  <!-- Aquí se dibujarán las tareas agrupadas por persona automáticamente -->
-</div>
+  <div class="overlay" id="overlay">
+    <div class="overlay-box">
+      <div class="spinner"></div>
+      <p id="overlay-text">Analizando la foto…</p>
+    </div>
+  </div>
 
-<div class="action-bar">
-  <input type="file" id="photoInput" accept="image/*" capture="environment" style="display: none;" onchange="procesarFoto(event)">
-  <button class="btn btn-main" onclick="document.getElementById('photoInput').click()">📸 Subir Foto y Procesar</button>
-</div>
-
-<div class="loading-overlay" id="loading">
-  <div class="spinner"></div>
-  <h3>Analizando con IA...</h3>
-  <p style="font-size: 12px; color: var(--text-dim); margin-top: 8px;">El servidor puede tardar 50s en despertar.<br>Por favor, no cierres esta pantalla.</p>
-</div>
+  <div class="toast" id="toast"></div>
 
 <script>
-  // URL ya actualizada con tu servidor
-  const BACKEND_URL = "https://pendientes-backend.onrender.com";
+const BACKEND_URL = "https://pendientes-backend.onrender.com";
+const EQUIPO = ["GERARDO", "CRIS", "MARIO", "HÉCTOR", "GRACIA", "INGRID", "JULIO"];
+const DIAS = ["L", "Ma", "Mi", "J", "V", "S", "D"];
 
-  let equipo = ["GERARDO", "CRIS", "MARIO", "HÉCTOR", "GRACIA", "INGRID", "JULIO"];
+const tareasContainer = document.getElementById("tareas-container");
+const habitosContainer = document.getElementById("habitos-container");
+const fechaMeta = document.getElementById("fecha-meta");
+const overlay = document.getElementById("overlay");
+const overlayText = document.getElementById("overlay-text");
+const toastEl = document.getElementById("toast");
 
-  async function cargarTablero() {
-    try {
-      const res = await fetch(`${BACKEND_URL}/api/data`);
-      const db = await res.json();
-      renderizarTablero(db.pendientes);
-    } catch (e) {
-      console.log("Servidor dormido o URL incorrecta.");
-    }
+function mostrarToast(mensaje, esError = false) {
+  toastEl.textContent = mensaje;
+  toastEl.classList.toggle("error", esError);
+  toastEl.classList.add("show");
+  setTimeout(() => toastEl.classList.remove("show"), 2600);
+}
+
+function mostrarOverlay(texto) {
+  overlayText.textContent = texto;
+  overlay.classList.add("show");
+}
+function ocultarOverlay() {
+  overlay.classList.remove("show");
+}
+
+function claseEdad(dias) {
+  if (dias >= 10) return "age-high";
+  if (dias >= 5) return "age-mid";
+  return "age-low";
+}
+function textoEdad(dias) {
+  return dias === 0 ? "Hoy" : `${dias}d`;
+}
+
+function renderizarTablero(data) {
+  const { pendientes, habitos } = data;
+
+  const hoy = new Date();
+  fechaMeta.textContent = hoy.toLocaleDateString("es-HN", { day: "2-digit", month: "2-digit", year: "numeric" })
+    + ` · ${pendientes.length} pendiente${pendientes.length === 1 ? "" : "s"}`;
+
+  // --- Tareas agrupadas por persona ---
+  tareasContainer.innerHTML = "";
+  if (pendientes.length === 0) {
+    tareasContainer.innerHTML = `<div class="empty-state">No hay pendientes. Toma una foto de tu hoja o agrega uno abajo.</div>`;
   }
 
-  function renderizarTablero(pendientes) {
-    const container = document.getElementById('boardContainer');
-    container.innerHTML = "";
+  EQUIPO.forEach(persona => {
+    const tareasPersona = pendientes.filter(t => t.asignado_a === persona);
+    if (tareasPersona.length === 0) return;
 
-    equipo.forEach(miembro => {
-      const tareasPersona = pendientes.filter(p => p.asignado_a === miembro);
-      if (tareasPersona.length > 0) {
-        let html = `<div class="group-title">${miembro} (${tareasPersona.length})</div><div class="card">`;
-        tareasPersona.forEach(t => {
-          html += `
-            <div class="task-item">
-              <span class="task-id">${t.id}.</span>
-              <span class="task-desc">${t.descripcion}</span>
-              <span class="task-days">${t.dias}</span>
-            </div>`;
-        });
-        html += `</div>`;
-        container.innerHTML += html;
-      }
+    const card = document.createElement("div");
+    card.className = "person-card";
+
+    const header = document.createElement("div");
+    header.className = "person-header";
+    header.innerHTML = `<span>${persona}</span><span class="count">${tareasPersona.length}</span>`;
+    card.appendChild(header);
+
+    tareasPersona.forEach(t => {
+      const row = document.createElement("div");
+      row.className = "task-row";
+      row.innerHTML = `
+        <button class="check" data-id="${t.id}" aria-label="Completar"></button>
+        <div class="task-body">
+          <div class="task-desc">
+            ${t.prioritaria ? '<span class="star">★</span>' : ""}
+            <span>${escapeHtml(t.descripcion)}</span>
+            <span class="age ${claseEdad(t.dias_pendiente)}">${textoEdad(t.dias_pendiente)}</span>
+          </div>
+        </div>
+      `;
+      card.appendChild(row);
     });
+
+    // Agregar tarea manual a esta persona
+    const addRow = document.createElement("div");
+    addRow.className = "add-row";
+    addRow.innerHTML = `
+      <input type="text" placeholder="Agregar pendiente…" data-persona="${persona}">
+      <button data-persona="${persona}">+</button>
+    `;
+    card.appendChild(addRow);
+
+    tareasContainer.appendChild(card);
+  });
+
+  // --- Hábitos ---
+  habitosContainer.innerHTML = "";
+  habitos.forEach(h => {
+    const card = document.createElement("div");
+    card.className = "habit-card";
+    card.innerHTML = `
+      <div class="habit-name">${escapeHtml(h.nombre)} — ${h.completados_semana}/7</div>
+      <div class="habit-days">
+        ${DIAS.map(d => `<div class="habit-day ${h.registros[d] ? "on" : ""}">${d}</div>`).join("")}
+      </div>
+    `;
+    habitosContainer.appendChild(card);
+  });
+}
+
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+async function cargarTablero() {
+  try {
+    const res = await fetch(`${BACKEND_URL}/pendientes`);
+    if (!res.ok) throw new Error("El servidor respondió con un error.");
+    const data = await res.json();
+    renderizarTablero(data);
+  } catch (err) {
+    tareasContainer.innerHTML = `<div class="empty-state">No se pudo cargar el tablero. Verifica tu conexión y desliza hacia abajo para reintentar.</div>`;
+    mostrarToast("No se pudo conectar con el servidor.", true);
   }
+}
 
-  async function procesarFoto(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    document.getElementById('loading').classList.add('active');
-
-    const formData = new FormData();
-    formData.append("file", file);
-
-    try {
-      const response = await fetch(`${BACKEND_URL}/procesar-hoja`, {
-        method: "POST",
-        body: formData
-      });
-      const res = await response.json();
-      
-      if (res.status === "success") {
-        renderizarTablero(res.data.pendientes);
-        alert("✅ Listo. Revisa las tareas agrupadas en pantalla. Si todo está correcto, presiona Exportar PDF.");
-      }
-    } catch (error) {
-      alert("Error de conexión. Verifica que el servidor en Render esté activo.");
-    } finally {
-      document.getElementById('loading').classList.remove('active');
+// --- Completar tarea con un tap ---
+tareasContainer.addEventListener("click", async (e) => {
+  const btn = e.target.closest(".check");
+  if (!btn) return;
+  const id = btn.dataset.id;
+  btn.classList.add("done");
+  btn.disabled = true;
+  try {
+    const res = await fetch(`${BACKEND_URL}/tareas/${id}/completar`, { method: "PATCH" });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || "No se pudo completar la tarea.");
     }
+    const data = await res.json();
+    renderizarTablero(data);
+    mostrarToast("Tarea completada.");
+  } catch (err) {
+    btn.classList.remove("done");
+    btn.disabled = false;
+    mostrarToast(err.message, true);
   }
+});
 
-  function descargarPDF() {
-    window.open(`${BACKEND_URL}/descargar-pdf`, '_blank');
+// --- Agregar tarea manual ---
+tareasContainer.addEventListener("click", async (e) => {
+  const btn = e.target.closest(".add-row button");
+  if (!btn) return;
+  const persona = btn.dataset.persona;
+  const input = tareasContainer.querySelector(`.add-row input[data-persona="${persona}"]`);
+  const descripcion = input.value.trim();
+  if (!descripcion) return;
+
+  btn.disabled = true;
+  try {
+    const res = await fetch(`${BACKEND_URL}/tareas`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ asignado_a: persona, descripcion })
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || "No se pudo agregar la tarea.");
+    }
+    const data = await res.json();
+    renderizarTablero(data);
+    mostrarToast("Tarea agregada.");
+  } catch (err) {
+    mostrarToast(err.message, true);
+    btn.disabled = false;
   }
+});
 
-  // Cargar datos al entrar
-  cargarTablero();
+// --- Procesar foto ---
+document.getElementById("foto-input").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  mostrarOverlay("Analizando la foto…");
+  const formData = new FormData();
+  formData.append("file", file);
+
+  try {
+    const res = await fetch(`${BACKEND_URL}/procesar-hoja`, { method: "POST", body: formData });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || "No se pudo procesar la foto.");
+    renderizarTablero(data);
+    mostrarToast("Hoja procesada. Revisa que todo esté correcto.");
+  } catch (err) {
+    mostrarToast(err.message, true);
+  } finally {
+    ocultarOverlay();
+    e.target.value = "";
+  }
+});
+
+// --- Descargar PDF ---
+document.getElementById("btn-pdf").addEventListener("click", () => {
+  window.open(`${BACKEND_URL}/descargar-pdf`, "_blank");
+});
+
+cargarTablero();
 </script>
 </body>
 </html>
