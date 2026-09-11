@@ -359,11 +359,11 @@ function renderizarTablero(data) {
   fechaMeta.textContent = hoy.toLocaleDateString("es-HN", { day: "2-digit", month: "2-digit", year: "numeric" })
     + ` · ${pendientes.length} pendiente${pendientes.length === 1 ? "" : "s"}`;
 
-  // --- Tareas agrupadas por persona ---
+  // --- Tareas de trabajo, agrupadas por persona ---
   tareasContainer.innerHTML = "";
 
   EQUIPO.forEach(persona => {
-    const tareasPersona = pendientes.filter(t => t.asignado_a === persona);
+    const tareasPersona = pendientes.filter(t => t.asignado_a === persona && t.categoria === "TRABAJO");
 
     const card = document.createElement("div");
     card.className = "person-card";
@@ -393,13 +393,49 @@ function renderizarTablero(data) {
     const addRow = document.createElement("div");
     addRow.className = "add-row";
     addRow.innerHTML = `
-      <input type="text" placeholder="Agregar pendiente…" data-persona="${persona}">
-      <button data-persona="${persona}">+</button>
+      <input type="text" placeholder="Agregar pendiente…" data-persona="${persona}" data-categoria="TRABAJO">
+      <button data-persona="${persona}" data-categoria="TRABAJO">+</button>
     `;
     card.appendChild(addRow);
 
     tareasContainer.appendChild(card);
   });
+
+  // --- Personales: sección aparte, no mezclada con las tareas de equipo ---
+  const tareasPersonales = pendientes.filter(t => t.categoria === "PERSONALES");
+  const cardPersonales = document.createElement("div");
+  cardPersonales.className = "person-card";
+
+  const headerPersonales = document.createElement("div");
+  headerPersonales.className = "person-header";
+  headerPersonales.innerHTML = `<span>PERSONALES</span><span class="count">${tareasPersonales.length}</span>`;
+  cardPersonales.appendChild(headerPersonales);
+
+  tareasPersonales.forEach(t => {
+    const row = document.createElement("div");
+    row.className = "task-row";
+    row.innerHTML = `
+      <button class="check" data-id="${t.id}" aria-label="Completar"></button>
+      <div class="task-body">
+        <div class="task-desc">
+          ${t.prioritaria ? '<span class="star">★</span>' : ""}
+          <span>${escapeHtml(t.descripcion)}</span>
+          <span class="age ${claseEdad(t.dias_pendiente)}">${textoEdad(t.dias_pendiente)}</span>
+        </div>
+      </div>
+    `;
+    cardPersonales.appendChild(row);
+  });
+
+  const addRowPersonales = document.createElement("div");
+  addRowPersonales.className = "add-row";
+  addRowPersonales.innerHTML = `
+    <input type="text" placeholder="Agregar pendiente personal…" data-persona="GERARDO" data-categoria="PERSONALES">
+    <button data-persona="GERARDO" data-categoria="PERSONALES">+</button>
+  `;
+  cardPersonales.appendChild(addRowPersonales);
+
+  tareasContainer.appendChild(cardPersonales);
 
   // --- Hábitos ---
   habitosContainer.innerHTML = "";
@@ -462,7 +498,10 @@ tareasContainer.addEventListener("click", async (e) => {
   const btn = e.target.closest(".add-row button");
   if (!btn) return;
   const persona = btn.dataset.persona;
-  const input = tareasContainer.querySelector(`.add-row input[data-persona="${persona}"]`);
+  const categoria = btn.dataset.categoria;
+  const input = tareasContainer.querySelector(
+    `.add-row input[data-persona="${persona}"][data-categoria="${categoria}"]`
+  );
   const descripcion = input.value.trim();
   if (!descripcion) return;
 
@@ -471,7 +510,7 @@ tareasContainer.addEventListener("click", async (e) => {
     const res = await fetch(`${BACKEND_URL}/tareas`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ asignado_a: persona, descripcion })
+      body: JSON.stringify({ asignado_a: persona, categoria, descripcion })
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
