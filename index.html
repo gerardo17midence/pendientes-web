@@ -76,20 +76,36 @@
     color: #fff;
     font-weight: 700;
     font-size: 14px;
+    cursor: grab;
   }
+  .person-header:active { cursor: grabbing; }
   .person-header .count {
     font-weight: 500;
     font-size: 12px;
     opacity: 0.75;
   }
+  .section-ghost { opacity: 0.35; }
+  .task-ghost { opacity: 0.35; background: var(--accent-soft); }
   .task-row {
     display: flex;
     align-items: flex-start;
-    gap: 10px;
+    gap: 8px;
     padding: 12px 14px;
     border-top: 1px solid var(--line);
   }
   .task-row:first-of-type { border-top: none; }
+
+  .drag-handle {
+    color: #C9C6BB;
+    font-size: 15px;
+    line-height: 1;
+    padding: 2px 2px 2px 0;
+    cursor: grab;
+    flex-shrink: 0;
+    touch-action: none;
+    user-select: none;
+  }
+  .drag-handle:active { cursor: grabbing; }
 
   .check {
     width: 22px;
@@ -316,6 +332,7 @@
 
   <div class="toast" id="toast"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
 <script>
 const BACKEND_URL = "https://pendientes-backend.onrender.com";
 const EQUIPO = ["GERARDO", "CRIS", "MARIO", "HÉCTOR", "GRACIA", "INGRID", "JULIO"];
@@ -359,24 +376,35 @@ function renderizarTablero(data) {
   fechaMeta.textContent = hoy.toLocaleDateString("es-HN", { day: "2-digit", month: "2-digit", year: "numeric" })
     + ` · ${pendientes.length} pendiente${pendientes.length === 1 ? "" : "s"}`;
 
-  // --- Tareas de trabajo, agrupadas por persona ---
+  // --- Tareas: una tarjeta por sección (equipo + Personales), en el orden guardado ---
   tareasContainer.innerHTML = "";
 
-  EQUIPO.forEach(persona => {
-    const tareasPersona = pendientes.filter(t => t.asignado_a === persona && t.categoria === "TRABAJO");
+  const secciones = EQUIPO.map(p => ({ key: p, titulo: p, persona: p, categoria: "TRABAJO" }));
+  secciones.push({ key: "PERSONALES", titulo: "PERSONALES", persona: "GERARDO", categoria: "PERSONALES" });
+
+  ordenarSecciones(secciones).forEach(sec => {
+    const tareasSeccion = pendientes.filter(t => t.asignado_a === sec.persona && t.categoria === sec.categoria);
 
     const card = document.createElement("div");
     card.className = "person-card";
+    card.dataset.key = sec.key;
 
     const header = document.createElement("div");
     header.className = "person-header";
-    header.innerHTML = `<span>${persona}</span><span class="count">${tareasPersona.length}</span>`;
+    header.innerHTML = `<span>${sec.titulo}</span><span class="count">${tareasSeccion.length}</span>`;
     card.appendChild(header);
 
-    tareasPersona.forEach(t => {
+    const taskList = document.createElement("div");
+    taskList.className = "task-list";
+    taskList.dataset.persona = sec.persona;
+    taskList.dataset.categoria = sec.categoria;
+
+    tareasSeccion.forEach(t => {
       const row = document.createElement("div");
       row.className = "task-row";
+      row.dataset.id = t.id;
       row.innerHTML = `
+        <span class="drag-handle" aria-hidden="true">⠿</span>
         <button class="check" data-id="${t.id}" aria-label="Completar"></button>
         <div class="task-body">
           <div class="task-desc">
@@ -386,56 +414,23 @@ function renderizarTablero(data) {
           </div>
         </div>
       `;
-      card.appendChild(row);
+      taskList.appendChild(row);
     });
+    card.appendChild(taskList);
 
-    // Agregar tarea manual a esta persona — siempre visible, incluso sin tareas aún
     const addRow = document.createElement("div");
     addRow.className = "add-row";
+    const placeholder = sec.categoria === "PERSONALES" ? "Agregar pendiente personal…" : "Agregar pendiente…";
     addRow.innerHTML = `
-      <input type="text" placeholder="Agregar pendiente…" data-persona="${persona}" data-categoria="TRABAJO">
-      <button data-persona="${persona}" data-categoria="TRABAJO">+</button>
+      <input type="text" placeholder="${placeholder}" data-persona="${sec.persona}" data-categoria="${sec.categoria}">
+      <button data-persona="${sec.persona}" data-categoria="${sec.categoria}">+</button>
     `;
     card.appendChild(addRow);
 
     tareasContainer.appendChild(card);
   });
 
-  // --- Personales: sección aparte, no mezclada con las tareas de equipo ---
-  const tareasPersonales = pendientes.filter(t => t.categoria === "PERSONALES");
-  const cardPersonales = document.createElement("div");
-  cardPersonales.className = "person-card";
-
-  const headerPersonales = document.createElement("div");
-  headerPersonales.className = "person-header";
-  headerPersonales.innerHTML = `<span>PERSONALES</span><span class="count">${tareasPersonales.length}</span>`;
-  cardPersonales.appendChild(headerPersonales);
-
-  tareasPersonales.forEach(t => {
-    const row = document.createElement("div");
-    row.className = "task-row";
-    row.innerHTML = `
-      <button class="check" data-id="${t.id}" aria-label="Completar"></button>
-      <div class="task-body">
-        <div class="task-desc">
-          ${t.prioritaria ? '<span class="star">★</span>' : ""}
-          <span>${escapeHtml(t.descripcion)}</span>
-          <span class="age ${claseEdad(t.dias_pendiente)}">${textoEdad(t.dias_pendiente)}</span>
-        </div>
-      </div>
-    `;
-    cardPersonales.appendChild(row);
-  });
-
-  const addRowPersonales = document.createElement("div");
-  addRowPersonales.className = "add-row";
-  addRowPersonales.innerHTML = `
-    <input type="text" placeholder="Agregar pendiente personal…" data-persona="GERARDO" data-categoria="PERSONALES">
-    <button data-persona="GERARDO" data-categoria="PERSONALES">+</button>
-  `;
-  cardPersonales.appendChild(addRowPersonales);
-
-  tareasContainer.appendChild(cardPersonales);
+  inicializarSortables();
 
   // --- Hábitos ---
   habitosContainer.innerHTML = "";
@@ -450,6 +445,70 @@ function renderizarTablero(data) {
     `;
     habitosContainer.appendChild(card);
   });
+}
+
+// --- Orden de las secciones (persiste en este dispositivo) ---
+const CLAVE_ORDEN_SECCIONES = "ordenSecciones";
+
+function ordenarSecciones(secciones) {
+  let guardado = [];
+  try {
+    guardado = JSON.parse(localStorage.getItem(CLAVE_ORDEN_SECCIONES) || "[]");
+  } catch { guardado = []; }
+  if (!Array.isArray(guardado) || guardado.length === 0) return secciones;
+
+  const porClave = Object.fromEntries(secciones.map(s => [s.key, s]));
+  const ordenadas = guardado.filter(k => porClave[k]).map(k => porClave[k]);
+  // Cualquier sección nueva que no estaba guardada (ej. se agregó a EQUIPO) va al final
+  secciones.forEach(s => { if (!guardado.includes(s.key)) ordenadas.push(s); });
+  return ordenadas;
+}
+
+function guardarOrdenSecciones() {
+  const claves = [...tareasContainer.querySelectorAll(".person-card")].map(c => c.dataset.key);
+  localStorage.setItem(CLAVE_ORDEN_SECCIONES, JSON.stringify(claves));
+}
+
+// --- Arrastrar y soltar: secciones completas, y tareas dentro de cada sección ---
+let sortableSecciones = null;
+let sortablesTareas = [];
+
+function inicializarSortables() {
+  if (sortableSecciones) sortableSecciones.destroy();
+  sortablesTareas.forEach(s => s.destroy());
+  sortablesTareas = [];
+
+  sortableSecciones = new Sortable(tareasContainer, {
+    handle: ".person-header",
+    animation: 150,
+    ghostClass: "section-ghost",
+    onEnd: guardarOrdenSecciones,
+  });
+
+  tareasContainer.querySelectorAll(".task-list").forEach(lista => {
+    sortablesTareas.push(new Sortable(lista, {
+      handle: ".drag-handle",
+      animation: 150,
+      ghostClass: "task-ghost",
+      onEnd: () => guardarOrdenTareas(lista),
+    }));
+  });
+}
+
+async function guardarOrdenTareas(lista) {
+  const ids = [...lista.querySelectorAll(".task-row")].map(r => parseInt(r.dataset.id, 10));
+  if (ids.length < 2) return;
+  try {
+    const res = await fetch(`${BACKEND_URL}/tareas/reordenar`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orden_ids: ids }),
+    });
+    if (!res.ok) throw new Error("No se pudo guardar el nuevo orden.");
+  } catch (err) {
+    mostrarToast("No se pudo guardar el orden. Intenta de nuevo.", true);
+    cargarTablero();
+  }
 }
 
 function escapeHtml(str) {
@@ -493,18 +552,12 @@ tareasContainer.addEventListener("click", async (e) => {
   }
 });
 
-// --- Agregar tarea manual ---
-tareasContainer.addEventListener("click", async (e) => {
-  const btn = e.target.closest(".add-row button");
-  if (!btn) return;
-  const persona = btn.dataset.persona;
-  const categoria = btn.dataset.categoria;
-  const input = tareasContainer.querySelector(
-    `.add-row input[data-persona="${persona}"][data-categoria="${categoria}"]`
-  );
+// --- Agregar tarea manual (click en + o Enter en el campo) ---
+async function agregarTarea(persona, categoria, input, btn) {
   const descripcion = input.value.trim();
   if (!descripcion) return;
 
+  input.disabled = true;
   btn.disabled = true;
   try {
     const res = await fetch(`${BACKEND_URL}/tareas`, {
@@ -521,8 +574,33 @@ tareasContainer.addEventListener("click", async (e) => {
     mostrarToast("Tarea agregada.");
   } catch (err) {
     mostrarToast(err.message, true);
+    input.disabled = false;
     btn.disabled = false;
   }
+}
+
+tareasContainer.addEventListener("click", (e) => {
+  const btn = e.target.closest(".add-row button");
+  if (!btn) return;
+  const persona = btn.dataset.persona;
+  const categoria = btn.dataset.categoria;
+  const input = tareasContainer.querySelector(
+    `.add-row input[data-persona="${persona}"][data-categoria="${categoria}"]`
+  );
+  agregarTarea(persona, categoria, input, btn);
+});
+
+tareasContainer.addEventListener("keydown", (e) => {
+  if (e.key !== "Enter") return;
+  const input = e.target.closest(".add-row input");
+  if (!input) return;
+  e.preventDefault();
+  const persona = input.dataset.persona;
+  const categoria = input.dataset.categoria;
+  const btn = tareasContainer.querySelector(
+    `.add-row button[data-persona="${persona}"][data-categoria="${categoria}"]`
+  );
+  agregarTarea(persona, categoria, input, btn);
 });
 
 // --- Procesar foto ---
