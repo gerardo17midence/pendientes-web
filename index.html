@@ -361,13 +361,9 @@ function renderizarTablero(data) {
 
   // --- Tareas agrupadas por persona ---
   tareasContainer.innerHTML = "";
-  if (pendientes.length === 0) {
-    tareasContainer.innerHTML = `<div class="empty-state">No hay pendientes. Toma una foto de tu hoja o agrega uno abajo.</div>`;
-  }
 
   EQUIPO.forEach(persona => {
     const tareasPersona = pendientes.filter(t => t.asignado_a === persona);
-    if (tareasPersona.length === 0) return;
 
     const card = document.createElement("div");
     card.className = "person-card";
@@ -393,7 +389,7 @@ function renderizarTablero(data) {
       card.appendChild(row);
     });
 
-    // Agregar tarea manual a esta persona
+    // Agregar tarea manual a esta persona — siempre visible, incluso sin tareas aún
     const addRow = document.createElement("div");
     addRow.className = "add-row";
     addRow.innerHTML = `
